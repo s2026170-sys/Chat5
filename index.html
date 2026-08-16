@@ -1,0 +1,2591 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>チャットアプリ Pro</title>
+  <style>
+    :root {
+      --bg-main: #ffffff;
+      --bg-card: #f8fafc;
+      --bg-header: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --accent-color: #3b82f6;
+      --chat-my-bubble: #3b82f6;
+
+      --img-border-width: 2px;
+      --img-border-style: solid;
+      --img-border-color: #3b82f6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .chat-container {
+      width: 100vw;
+      height: 100vh;
+      max-width: 430px;
+      max-height: 932px;
+      background-color: var(--bg-main);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--border-color);
+    }
+
+    .block-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(255, 255, 255, 0.95);
+      color: var(--text-main);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .chat-header {
+      background-color: var(--bg-header);
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      border-bottom: 1px solid var(--border-color);
+      backdrop-filter: blur(8px);
+      flex-shrink: 0;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .room-info { display: flex; flex-direction: column; }
+    .room-title { font-size: 15px; font-weight: bold; color: var(--text-main); }
+    .pass-badge {
+      font-size: 11px;
+      color: var(--text-sub);
+      background-color: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 2px;
+      font-family: monospace;
+      width: fit-content;
+      border: 1px solid var(--border-color);
+    }
+
+    .gear-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-sub);
+      transition: color 0.2s;
+    }
+    .gear-btn:hover { color: var(--text-main); }
+    .gear-icon { width: 20px; height: 20px; fill: currentColor; }
+
+    /* 下部ナビゲーションタブ */
+    .nav-tabs-bottom {
+      display: flex;
+      width: 100%;
+      border-top: 1px solid var(--border-color);
+      background-color: var(--bg-header);
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px 0;
+      text-align: center;
+      background: none;
+      border: none;
+      font-size: 8px;
+      font-weight: bold;
+      color: var(--text-sub);
+      cursor: pointer;
+      border-top: 3px solid transparent;
+      transition: all 0.2s ease-in-out;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      position: relative;
+    }
+
+    .tab-btn.active {
+      color: var(--accent-color);
+      border-top-color: var(--accent-color);
+    }
+
+    .tab-icon {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .notification-badge {
+      position: absolute;
+      top: 2px;
+      right: 6px;
+      background-color: #ef4444;
+      color: white;
+      font-size: 9px;
+      border-radius: 10px;
+      padding: 1px 5px;
+      font-weight: bold;
+      display: none;
+    }
+
+    .view-content {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      overflow-y: auto;
+      position: relative;
+      animation: fadeIn 0.15s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.99); } to { opacity: 1; transform: scale(1); } }
+
+    .view-content.active { display: flex; }
+
+    .list-container {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--text-main);
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+      opacity: 0.8;
+    }
+
+    .card-item {
+      background-color: var(--bg-card);
+      padding: 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1px solid var(--border-color);
+      transition: transform 0.1s;
+      position: relative;
+      cursor: pointer;
+    }
+    .card-item:active { transform: scale(0.98); }
+
+    .home-card {
+      border: 1px solid var(--accent-color);
+      background: linear-gradient(135deg, #ffffff 60%, rgba(59, 130, 246, 0.08));
+    }
+
+    .card-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+
+    .card-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background-color: #e2e8f0;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+      flex-shrink: 0;
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+      border: var(--img-border-width) var(--img-border-style) var(--img-border-color);
+    }
+
+    .card-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+    .card-name { font-size: 14px; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .card-time { font-size: 10px; color: var(--text-sub); }
+    .unread-badge {
+      background-color: #ef4444;
+      color: white;
+      font-size: 10px;
+      font-weight: bold;
+      border-radius: 10px;
+      padding: 1px 6px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .form-box {
+      background-color: var(--bg-card);
+      padding: 12px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border: 1px solid var(--border-color);
+    }
+
+    .form-row { display: flex; gap: 8px; align-items: center; }
+    .form-select, .form-input {
+      flex: 1;
+      border: 1px solid var(--border-color);
+      background-color: #ffffff;
+      color: var(--text-main);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .color-picker-input {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 40px; height: 36px;
+      background-color: transparent;
+      border: none; cursor: pointer;
+    }
+
+    .color-picker-input::-webkit-color-swatch {
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    .friend-checkbox-list {
+      max-height: 100px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #ffffff;
+    }
+
+    .friend-checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn:hover { opacity: 0.9; }
+    .btn-primary { background-color: var(--accent-color); color: #ffffff; }
+    .btn-danger { background-color: #ef4444; color: white; }
+    .btn-secondary { background-color: #e2e8f0; color: var(--text-main); }
+
+    .chat-room-bar {
+      background-color: var(--bg-header);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .announcement-bar {
+      background-color: #fef3c7;
+      border-bottom: 1px solid #fde68a;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #92400e;
+      z-index: 10;
+    }
+    .announcement-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-right: 8px;
+      cursor: pointer;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background-size: cover;
+      background-position: center;
+      background-color: #f1f5f9;
+      border: var(--img-border-width) var(--img-border-style) transparent;
+      scroll-behavior: smooth;
+    }
+
+    .message {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      max-width: 85%;
+      position: relative;
+      user-select: none;
+    }
+
+    .message.other { align-self: flex-start; }
+    .message.me { align-self: flex-end; }
+    .message.system {
+      align-self: center;
+      max-width: 100%;
+      margin: 4px 0;
+    }
+
+    .system-bubble {
+      background: rgba(100, 116, 139, 0.2);
+      color: var(--text-sub);
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 13px;
+      color: var(--text-main);
+      flex-shrink: 0;
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+      border: var(--img-border-width) var(--img-border-style) var(--img-border-color);
+    }
+
+    .message-content { display: flex; flex-direction: column; }
+    .user-name { font-size: 11px; color: var(--text-sub); margin-bottom: 3px; }
+
+    .bubble-wrapper { display: flex; align-items: flex-end; gap: 6px; flex-direction: column; position: relative; }
+    .message.me .bubble-wrapper { align-items: flex-end; }
+    .message.other .bubble-wrapper { align-items: flex-start; }
+
+    .reply-preview-box {
+      background: rgba(0, 0, 0, 0.05);
+      border-left: 3px solid var(--accent-color);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .reply-input-bar {
+      display: none;
+      background: #e2e8f0;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--text-main);
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.4;
+      word-break: break-word;
+      cursor: pointer;
+      white-space: pre-wrap;
+    }
+
+    .message.other .bubble { background-color: #ffffff; color: var(--text-main); border-top-left-radius: 2px; border: 1px solid var(--border-color); }
+    .message.me .bubble { 
+      background-color: var(--chat-my-bubble); 
+      color: #ffffff; 
+      font-weight: 500;
+      border-top-right-radius: 2px; 
+    }
+
+    .chat-media {
+      max-width: 220px;
+      max-height: 250px;
+      border-radius: 12px;
+      object-fit: cover;
+      object-position: center;
+      border: var(--img-border-width) var(--img-border-style) var(--img-border-color);
+      background: #000;
+      cursor: pointer;
+    }
+
+    .reactions-wrapper {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .reaction-pill {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 2px 6px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .reaction-pill.active {
+      border-color: var(--accent-color);
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+
+    .meta-info {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-top: 2px;
+    }
+
+    .read-status {
+      font-size: 10px;
+      color: var(--accent-color);
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .time { font-size: 10px; color: var(--text-sub); white-space: nowrap; }
+
+    .chat-input-area {
+      background-color: var(--bg-header);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+      border-top: 1px solid var(--border-color);
+      position: relative;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .media-upload-label {
+      width: 36px; height: 36px; background-color: #f1f5f9; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      font-size: 10px; font-weight: bold; color: var(--text-sub); flex-shrink: 0;
+      border: 1px solid var(--border-color);
+      margin-bottom: 2px;
+    }
+
+    .file-input-hidden { display: none; }
+
+    .chat-textarea {
+      flex: 1;
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 8px 14px;
+      font-size: 14px;
+      outline: none;
+      background-color: #ffffff;
+      color: var(--text-main);
+      resize: none;
+      max-height: 100px;
+      min-height: 38px;
+      height: 38px;
+      line-height: 1.3;
+    }
+
+    .send-btn {
+      background-color: var(--accent-color); color: #ffffff; border: none; border-radius: 50%;
+      width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-weight: bold; flex-shrink: 0; margin-bottom: 2px;
+    }
+
+    .mention-menu {
+      position: absolute;
+      bottom: 100%;
+      left: 12px;
+      right: 12px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      max-height: 120px;
+      overflow-y: auto;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+      z-index: 40;
+    }
+
+    .mention-item {
+      padding: 8px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .mention-item:hover { background-color: #f1f5f9; }
+
+    .mention-text {
+      color: #3b82f6;
+      font-weight: bold;
+    }
+
+    .mentioned-notice {
+      color: #3b82f6;
+      font-size: 11px;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .modal {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4); display: none; justify-content: center;
+      align-items: center; z-index: 50; padding: 20px;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-content {
+      background: var(--bg-main); width: 100%; border-radius: 12px; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border-color);
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+
+    .lightbox-modal {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9); display: none; flex-direction: column;
+      justify-content: center; align-items: center; z-index: 80; padding: 20px;
+    }
+    .lightbox-content {
+      max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px;
+    }
+    .lightbox-actions {
+      display: flex; gap: 12px; margin-top: 16px;
+    }
+
+    .status-card {
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden; width: 100%;
+      display: flex; flex-direction: column;
+      position: relative; border: 1px solid var(--border-color);
+    }
+
+    .status-bg {
+      height: 120px; background-color: #cbd5e1;
+      background-size: cover; background-position: center;
+      position: relative;
+      border-bottom: var(--img-border-width) var(--img-border-style) var(--img-border-color);
+    }
+
+    .status-avatar-wrapper { position: absolute; bottom: -30px; left: 16px; }
+
+    .status-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      background-color: #e2e8f0; color: var(--text-main);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: bold;
+      background-size: cover; background-position: center;
+      border: var(--img-border-width) var(--img-border-style) var(--img-border-color);
+    }
+
+    .status-body { padding: 40px 16px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .status-name { font-size: 16px; font-weight: bold; color: var(--text-main); }
+    .status-msg { font-size: 13px; color: var(--text-sub); min-height: 20px; word-break: break-word; }
+
+    .msg-action-menu {
+      position: absolute;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: none;
+      flex-direction: column;
+      z-index: 60;
+      overflow: hidden;
+      min-width: 160px;
+    }
+
+    .reaction-bar {
+      display: flex;
+      justify-content: space-around;
+      padding: 8px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .reaction-btn {
+      font-size: 18px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .reaction-btn:hover { transform: scale(1.2); }
+
+    .msg-action-btn {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: bold;
+      background: none;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .msg-action-btn:last-child { border-bottom: none; }
+    .msg-action-btn:hover { background-color: #f1f5f9; }
+    .msg-action-btn.danger { color: #ef4444; }
+
+    .secret-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-top: 8px; }
+    .secret-media-card { position: relative; width: 100%; padding-top: 100%; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--border-color); }
+    .secret-media-card img, .secret-media-card video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+    .secret-delete-btn { position: absolute; top: 4px; right: 4px; background: rgba(239, 68, 68, 0.85); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; }
+    .pin-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 16px; }
+    .pin-input { width: 160px; padding: 10px; font-size: 20px; letter-spacing: 8px; text-align: center; border: 2px solid var(--border-color); border-radius: 8px; outline: none; }
+  </style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div id="blockOverlay" class="block-overlay">
+    <h2 style="color: #ef4444; font-size: 18px; margin-bottom: 8px;">アクセス制限</h2>
+    <p style="font-size: 13px; color: var(--text-sub);">すでに別のタブでチャットが開かれています。<br>1つのアカウントにつき1画面のみ利用可能です。</p>
+  </div>
+
+  <div class="chat-header">
+    <div class="header-top">
+      <div class="room-info">
+        <span class="room-title" id="headerTitle">HOME</span>
+        <span class="pass-badge">PASS: <strong id="myPassDisplay">---</strong></span>
+      </div>
+      <button class="gear-btn" onclick="openSettingsModal()" title="設定">
+        <svg class="gear-icon" viewBox="0 0 24 24">
+          <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6 3.6z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="viewHome" class="view-content active">
+    <div class="list-container">
+      <span class="section-title">マイプロフィール</span>
+      <div class="card-item home-card">
+        <div class="card-left">
+          <div class="card-avatar" id="homeMyAvatar" onclick="openMyStatusModal()">MY</div>
+          <div class="card-info">
+            <span class="card-name" id="profileName">USER</span>
+            <span class="card-sub" id="profileStatusMsg">ステータスメッセージ未設定</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="openMyStatusModal()">編集</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHATS (統合トーク一覧) -->
+  <div id="viewChats" class="view-content">
+    <div class="list-container">
+      <span class="section-title">トーク一覧</span>
+      <div id="chatsList"><p style="font-size: 12px; color: var(--text-sub);">トーク履歴がありません</p></div>
+    </div>
+  </div>
+
+  <!-- FRIENDS -->
+  <div id="viewFriends" class="view-content">
+    <div class="list-container">
+      <span class="section-title">友達を追加・検索</span>
+      <div class="form-box">
+        <div class="form-row">
+          <input type="text" id="targetPassInput" class="form-input" placeholder="相手のPASSまたは名前で検索" oninput="renderFriendsView()">
+          <button class="btn btn-primary" onclick="sendFriendRequest()">申請</button>
+        </div>
+      </div>
+
+      <span class="section-title">友達かも？</span>
+      <div id="requestsList"><p style="font-size: 12px; color: var(--text-sub);">リクエストはありません</p></div>
+
+      <span class="section-title">友達一覧</span>
+      <div id="friendsList"><p style="font-size: 12px; color: var(--text-sub);">まだ友達がいません</p></div>
+    </div>
+  </div>
+
+  <!-- GROUPS -->
+  <div id="viewGroups" class="view-content">
+    <div class="list-container">
+      <span class="section-title">グループを作成</span>
+      <div class="form-box">
+        <input type="text" id="newGroupName" class="form-input" placeholder="グループ名を入力">
+        <span style="font-size: 11px; color: var(--text-sub);">グループアイコン画像:</span>
+        <div class="form-row">
+          <button class="btn btn-secondary" style="flex: 1;" onclick="document.getElementById('groupIconInput').click()">画像を選択</button>
+          <select id="groupIconPosSelect" class="form-select">
+            <option value="center" selected>切り抜き: 中央</option>
+            <option value="top">切り抜き: 上端</option>
+            <option value="bottom">切り抜き: 下端</option>
+            <option value="left">切り抜き: 左端</option>
+            <option value="right">右端</option>
+          </select>
+        </div>
+        <input type="file" id="groupIconInput" class="file-input-hidden" accept="image/*" onchange="handleGroupIconSelect(event)">
+        <div id="groupIconPreviewArea" style="display:none; align-items:center; gap:10px;">
+          <div id="groupIconPreview" class="card-avatar" style="width:36px; height:36px;"></div>
+          <span style="font-size:11px; color:var(--text-sub);">アイコンプレビュー</span>
+        </div>
+
+        <span style="font-size: 11px; color: var(--text-sub);">追加する友達を選択:</span>
+        <div id="createGroupFriendsSelect" class="friend-checkbox-list"></div>
+        <button class="btn btn-primary" onclick="createGroup()">作成</button>
+      </div>
+
+      <span class="section-title">参加中のグループ</span>
+      <div id="groupList"><p style="font-size: 12px; color: var(--text-sub);">グループはありません</p></div>
+    </div>
+  </div>
+
+  <!-- OPEN CHAT -->
+  <div id="viewOpen" class="view-content">
+    <div class="list-container">
+      <span class="section-title">オープンチャットを作成</span>
+      <div class="form-box">
+        <div class="form-row">
+          <input type="text" id="newOpenChatName" class="form-input" placeholder="チャット部屋名を入力">
+          <button class="btn btn-primary" onclick="createOpenChat()">作成</button>
+        </div>
+      </div>
+
+      <span class="section-title">公開オープンチャット検索・一覧</span>
+      <div class="form-box">
+        <input type="text" id="openChatSearchInput" class="form-input" placeholder="オープンチャット名で検索..." oninput="renderOpenChatsView()">
+      </div>
+      <div id="openChatList"><p style="font-size: 12px; color: var(--text-sub);">オープンチャットはありません</p></div>
+    </div>
+  </div>
+
+  <!-- SECRET LIBRARY -->
+  <div id="viewSecret" class="view-content">
+    <div id="secretAuthArea" class="pin-container">
+      <span style="font-size: 14px; font-weight: bold; color: var(--text-main);" id="pinTitleText">シークレットPIN入力</span>
+      <input type="password" id="secretPinInput" class="pin-input" maxlength="4" placeholder="••••">
+      <button class="btn btn-primary" onclick="unlockSecretLibrary()">解除</button>
+    </div>
+
+    <div id="secretContentArea" class="list-container" style="display: none;">
+      <span class="section-title">メディアの追加</span>
+      <div class="form-box">
+        <div class="form-row">
+          <button class="btn btn-secondary" style="flex: 1;" onclick="document.getElementById('secretImgInput').click()">写真を追加</button>
+          <button class="btn btn-secondary" style="flex: 1;" onclick="document.getElementById('secretVideoInput').click()">動画を追加</button>
+        </div>
+        <input type="file" id="secretImgInput" class="file-input-hidden" accept="image/*" onchange="openSecretCropModal(event)">
+        <input type="file" id="secretVideoInput" class="file-input-hidden" accept="video/*" onchange="handleSecretVideoUpload(event)">
+      </div>
+
+      <span class="section-title">保存されたファイル</span>
+      <div id="secretGrid" class="secret-grid"></div>
+    </div>
+  </div>
+
+  <!-- トーク画面 -->
+  <div id="viewChatRoom" class="view-content" style="height: 100%;">
+    <div class="chat-room-bar">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div id="chatRoomAvatar" class="card-avatar" style="width: 28px; height: 28px; font-size: 11px; display: none;"></div>
+        <span id="chatRoomName" style="font-size: 13px; font-weight: bold; color: var(--text-main);">---</span>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button id="groupInviteBtn" class="btn btn-secondary" style="display:none;" onclick="openInviteModal()">＋ 友達を追加</button>
+        <button id="membersListBtn" class="btn btn-secondary" style="display:none;" onclick="openMembersModal()">参加者一覧</button>
+      </div>
+    </div>
+
+    <!-- アナウンスエリア -->
+    <div id="announcementBar" class="announcement-bar" style="display: none;">
+      <span class="announcement-text" id="announcementText" onclick="scrollToAnnouncedMessage()">📌 アナウンス表示</span>
+      <button style="background: none; border: none; cursor: pointer; color: #92400e; font-weight: bold;" onclick="removeAnnouncement()">✕</button>
+    </div>
+
+    <div class="chat-messages" id="chatMessages"></div>
+
+    <div class="chat-input-area">
+      <!-- メンションリストポップアップ -->
+      <div id="mentionMenu" class="mention-menu"></div>
+
+      <!-- リプライ用プレビューバー -->
+      <div id="replyBar" class="reply-input-bar">
+        <span id="replyTargetText">返信先...</span>
+        <button style="background:none; border:none; cursor:pointer; font-weight:bold;" onclick="cancelReply()">✕</button>
+      </div>
+
+      <div class="input-row">
+        <label for="imageInput" class="media-upload-label" title="画像送信">IMG</label>
+        <input type="file" id="imageInput" class="file-input-hidden" accept="image/*" onchange="openImageCropModal(event)">
+        
+        <label for="videoInput" class="media-upload-label" title="動画送信">MOV</label>
+        <input type="file" id="videoInput" class="file-input-hidden" accept="video/*" onchange="handleVideoUpload(event)">
+
+        <textarea id="messageInput" class="chat-textarea" placeholder="メッセージを入力" oninput="handleInputMention(event); autoResizeTextarea(this);" onkeydown="handleKeyDown(event)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">&gt;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ナビゲーションタブ（最下部） -->
+  <div class="nav-tabs-bottom">
+    <button class="tab-btn active" onclick="switchTab('home')">
+      <svg class="tab-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>HOME</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('chats')">
+      <svg class="tab-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+      <span>CHATS</span>
+      <span class="notification-badge" id="navChatsBadge">0</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('friends')">
+      <svg class="tab-icon" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <span>FRIENDS</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('groups')">
+      <svg class="tab-icon" viewBox="0 0 24 24"><path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.62c0-1.17.68-2.25 1.76-2.73 1.17-.51 2.61-.9 4.24-.9zM12 4a3.25 3.25 0 1 1 0 6.5A3.25 3.25 0 0 1 12 4z"/></svg>
+      <span>GROUPS</span>
+      <span class="notification-badge" id="navGroupBadge">0</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('open')">
+      <svg class="tab-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+      <span>OPEN</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('secret')">
+      <svg class="tab-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+      <span>SECRET</span>
+    </button>
+  </div>
+
+  <!-- メディア表示用ライトボックスモーダル -->
+  <div id="lightboxModal" class="lightbox-modal" onclick="closeLightbox(event)">
+    <div id="lightboxMediaContainer" style="display:flex; justify-content:center; align-items:center; width:100%;"></div>
+    <div class="lightbox-actions" onclick="event.stopPropagation()">
+      <a id="lightboxDownloadBtn" class="btn btn-primary" download target="_blank">ダウンロード</a>
+      <button class="btn btn-secondary" onclick="closeLightbox()">閉じる</button>
+    </div>
+  </div>
+
+  <!-- 既読者一覧表示モーダル -->
+  <div id="readUsersModal" class="modal">
+    <div class="modal-content">
+      <span style="font-size: 14px; font-weight: bold; color: var(--text-main);">既読をつけたユーザー</span>
+      <div id="readUsersList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+        <button class="btn btn-secondary" onclick="closeReadUsersModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 参加者一覧モーダル -->
+  <div id="membersModal" class="modal">
+    <div class="modal-content">
+      <span style="font-size: 14px; font-weight: bold; color: var(--text-main);">参加者一覧</span>
+      <div id="membersList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+        <button class="btn btn-secondary" onclick="closeMembersModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- メッセージアクションポップアップメニュー -->
+  <div id="msgActionMenu" class="msg-action-menu">
+    <div class="reaction-bar">
+      <button class="reaction-btn" onclick="addReaction('👍')">👍</button>
+      <button class="reaction-btn" onclick="addReaction('❤️')">❤️</button>
+      <button class="reaction-btn" onclick="addReaction('😆')">😆</button>
+      <button class="reaction-btn" onclick="addReaction('😮')">😮</button>
+      <button class="reaction-btn" onclick="addReaction('😢')">😢</button>
+      <button class="reaction-btn" onclick="addReaction('🙏')">🙏</button>
+    </div>
+    <button class="msg-action-btn" onclick="actionReplyMessage()">返信 (リプライ)</button>
+    <button class="msg-action-btn" onclick="actionCopyMessage()">コピー</button>
+    <button class="msg-action-btn" onclick="actionAnnounceMessage()">アナウンス</button>
+    <button class="msg-action-btn" onclick="actionDeleteMessage()">削除（自分のみ）</button>
+    <button id="unsendMenuBtn" class="msg-action-btn danger" onclick="actionUnsendMessage()">送信取り消し</button>
+    <button class="msg-action-btn danger" onclick="actionReportMessage()">通報</button>
+  </div>
+
+  <!-- 設定モーダル -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <span style="font-size: 15px; font-weight: bold; color: var(--text-main);">アプリ設定</span>
+      <div class="form-box">
+        <span style="font-size: 12px; color: var(--text-sub);">トーク背景画像の変更:</span>
+        <div class="form-row">
+          <button class="btn btn-secondary" style="flex: 1;" onclick="document.getElementById('chatBgFileInput').click()">画像をアップロード</button>
+          <button class="btn btn-danger" onclick="resetChatBg()">リセット</button>
+        </div>
+        <input type="file" id="chatBgFileInput" class="file-input-hidden" accept="image/*" onchange="handleChatBgUpload(event)">
+        
+        <span style="font-size: 11px; color: var(--text-sub); margin-top: 4px;">トーク背景の表示位置:</span>
+        <select id="chatBgPositionSelect" class="form-select" onchange="handleChatBgPosChange(event)">
+          <option value="center" selected>中央</option>
+          <option value="top">上端</option>
+          <option value="bottom">下端</option>
+          <option value="left">左端</option>
+          <option value="right">右端</option>
+        </select>
+
+        <span style="font-size: 12px; color: var(--text-sub); margin-top: 6px;">ホーム・アクセントテーマカラー（基調色）:</span>
+        <div class="form-row">
+          <input type="color" id="accentColorPicker" class="color-picker-input" onchange="handleColorChange(event)">
+          <span id="colorHexText" style="font-size: 12px; color: var(--text-main); font-family: monospace;">#3b82f6</span>
+        </div>
+
+        <span style="font-size: 12px; color: var(--text-sub); margin-top: 6px;">文字色（メインテキスト）:</span>
+        <div class="form-row">
+          <input type="color" id="textColorPicker" class="color-picker-input" onchange="handleTextColorChange(event)">
+          <span id="textColorHexText" style="font-size: 12px; color: var(--text-main); font-family: monospace;">#0f172a</span>
+        </div>
+
+        <span style="font-size: 12px; color: var(--text-sub); margin-top: 6px;">メディア枠取り設定（画像・動画等に適用）:</span>
+        <div class="form-row">
+          <span style="font-size: 11px; color: var(--text-sub);">線幅:</span>
+          <select id="borderWidthSelect" class="form-select" onchange="handleBorderSettingChange()">
+            <option value="1px">1px</option>
+            <option value="2px" selected>2px</option>
+            <option value="3px">3px</option>
+            <option value="4px">4px</option>
+          </select>
+          <span style="font-size: 11px; color: var(--text-sub);">種類:</span>
+          <select id="borderStyleSelect" class="form-select" onchange="handleBorderSettingChange()">
+            <option value="solid" selected>実線</option>
+            <option value="dashed">破線</option>
+            <option value="dotted">点線</option>
+            <option value="double">二重線</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <span style="font-size: 11px; color: var(--text-sub);">枠色:</span>
+          <input type="color" id="borderColorPicker" class="color-picker-input" onchange="handleBorderSettingChange()">
+          <span id="borderColorHexText" style="font-size: 12px; color: var(--text-main); font-family: monospace;">#3b82f6</span>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+        <button class="btn btn-secondary" onclick="closeSettingsModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 切り抜き・位置選択モーダル -->
+  <div id="imageCropModal" class="modal">
+    <div class="modal-content">
+      <span style="font-size: 14px; font-weight: bold; color: var(--text-main);">画像の切り抜き表示位置設定</span>
+      <div style="width: 100%; height: 200px; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #f1f5f9; border-radius: 8px;">
+        <img id="cropPreviewImg" src="" style="max-width: 100%; max-height: 100%; object-fit: cover; object-position: center;" alt="プレビュー">
+      </div>
+      <div class="form-row">
+        <span style="font-size: 12px; color: var(--text-sub);">切り抜き位置:</span>
+        <select id="cropPositionSelect" class="form-select" onchange="updateCropPreview()">
+          <option value="center" selected>中央</option>
+          <option value="top">上端</option>
+          <option value="bottom">下端</option>
+          <option value="left">左端</option>
+          <option value="right">右端</option>
+        </select>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+        <button class="btn btn-secondary" onclick="closeImageCropModal()">キャンセル</button>
+        <button class="btn btn-primary" id="cropConfirmBtn" onclick="confirmSendImage()">決定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- グループ招待モーダル -->
+  <div id="inviteModal" class="modal">
+    <div class="modal-content">
+      <span style="font-size: 14px; font-weight: bold; color: var(--text-main);">グループに友達を追加</span>
+      <div id="inviteFriendsList" class="friend-checkbox-list"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn btn-secondary" onclick="closeInviteModal()">キャンセル</button>
+        <button class="btn btn-primary" onclick="submitInviteFriends()">追加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ステータス（プロフィール）表示・編集モーダル -->
+  <div id="statusModal" class="modal">
+    <div class="modal-content" style="padding: 0; background: transparent; border: none;">
+      <div class="status-card">
+        <div id="modalStatusBg" class="status-bg">
+          <div class="status-avatar-wrapper">
+            <div id="modalStatusAvatar" class="status-avatar">U</div>
+          </div>
+        </div>
+        <div class="status-body">
+          <div id="modalStatusName" class="status-name">User</div>
+          <div id="modalStatusMsg" class="status-msg">---</div>
+
+          <div id="myStatusEditArea" style="display: none; flex-direction: column; gap: 8px; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+            <span style="font-size: 11px; color: var(--text-sub);">名前（表示名）:</span>
+            <input type="text" id="editNameInput" class="form-input" placeholder="名前を入力" oninput="autoSaveMyStatus()">
+
+            <span style="font-size: 11px; color: var(--text-sub);">ステータスメッセージ:</span>
+            <input type="text" id="editStatusMsgInput" class="form-input" placeholder="ステータスメッセージを入力" oninput="autoSaveMyStatus()">
+            
+            <span style="font-size: 11px; color: var(--text-sub);">背景・アイコンの表示切り抜き位置:</span>
+            <div class="form-row">
+              <span style="font-size: 11px; color: var(--text-sub);">背景位置:</span>
+              <select id="bgPosSelect" class="form-select" onchange="autoSaveMyStatus()">
+                <option value="center">中央</option>
+                <option value="top">上端</option>
+                <option value="bottom">下端</option>
+                <option value="left">左端</option>
+                <option value="right">右端</option>
+              </select>
+              <span style="font-size: 11px; color: var(--text-sub);">アイコン位置:</span>
+              <select id="avatarPosSelect" class="form-select" onchange="autoSaveMyStatus()">
+                <option value="center">中央</option>
+                <option value="top">上端</option>
+                <option value="bottom">下端</option>
+                <option value="left">左端</option>
+                <option value="right">右端</option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-secondary" style="flex: 1;" onclick="document.getElementById('bgImageFileInput').click()">背景変更</button>
+              <button class="btn btn-secondary" style="flex: 1;" onclick="document.getElementById('avatarImageFileInput').click()">アイコン変更</button>
+            </div>
+            <input type="file" id="bgImageFileInput" class="file-input-hidden" accept="image/*" onchange="handleBgSelect(event)">
+            <input type="file" id="avatarImageFileInput" class="file-input-hidden" accept="image/*" onchange="handleAvatarSelect(event)">
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+            <button class="btn btn-secondary" onclick="closeStatusModal()">閉じる</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Firebase SDK Module -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { 
+    getFirestore, collection, doc, setDoc, getDoc, updateDoc,
+    onSnapshot, query, where, orderBy, addDoc, deleteDoc, serverTimestamp, arrayUnion 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyASoXdl4g-buWLfzacrIudx1YOPrcrkHgA",
+    authDomain: "chat-e017e.firebaseapp.com",
+    projectId: "chat-e017e",
+    storageBucket: "chat-e017e.firebasestorage.app",
+    messagingSenderId: "744140415563",
+    appId: "1:744140415563:web:14b5228eee3062368a63ce",
+    measurementId: "G-VN4YZ54029"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  // --- Imgur APIを用いた画像アップロード関数（共通） ---
+  async function uploadImageToImgur(base64Data) {
+    const cleanBase64 = base64Data.split(',')[1] || base64Data;
+    const formData = new FormData();
+    formData.append('image', cleanBase64);
+    const res = await fetch('https://api.imgur.com/3/image', {
+      method: 'POST', 
+      headers: { Authorization: 'Client-ID cda3ec39a48f6bf' }, 
+      body: formData
+    });
+    const resData = await res.json();
+    if (resData.success) {
+      return resData.data.link;
+    } else {
+      throw new Error('Imgur upload failed');
+    }
+  }
+
+  // ローカル設定の管理
+  let selectedBgImage = localStorage.getItem('app_chat_bg_image') || '';
+  let selectedBgPos = localStorage.getItem('app_chat_bg_pos') || 'center';
+  let selectedColor = localStorage.getItem('app_chat_selected_color') || '#3b82f6';
+  let selectedTextColor = localStorage.getItem('app_chat_text_color') || '#0f172a';
+  let borderWidth = localStorage.getItem('app_chat_border_width') || '2px';
+  let borderStyle = localStorage.getItem('app_chat_border_style') || 'solid';
+  let borderColor = localStorage.getItem('app_chat_border_color') || '#3b82f6';
+
+  function applyThemeSettings() {
+    document.documentElement.style.setProperty('--chat-my-bubble', selectedColor);
+    document.documentElement.style.setProperty('--accent-color', selectedColor);
+    document.documentElement.style.setProperty('--text-main', selectedTextColor);
+    document.documentElement.style.setProperty('--img-border-width', borderWidth);
+    document.documentElement.style.setProperty('--img-border-style', borderStyle);
+    document.documentElement.style.setProperty('--img-border-color', borderColor);
+
+    const chatMsgs = document.getElementById('chatMessages');
+    if (chatMsgs) {
+      if (selectedBgImage) {
+        chatMsgs.style.backgroundImage = `url(${selectedBgImage})`;
+        chatMsgs.style.backgroundPosition = selectedBgPos;
+        chatMsgs.style.backgroundColor = 'transparent';
+      } else {
+        chatMsgs.style.backgroundImage = 'none';
+        chatMsgs.style.backgroundColor = '#f1f5f9';
+      }
+    }
+  }
+
+  // --- アカウント・プロフィール初期化（前者の仕組みに準拠） ---
+  let myPassword = localStorage.getItem('app_chat_user_pass');
+  if (!myPassword) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    myPassword = '';
+    for (let i = 0; i < 8; i++) myPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+    localStorage.setItem('app_chat_user_pass', myPassword);
+  }
+
+  let myProfile = JSON.parse(localStorage.getItem('app_chat_my_profile') || '{}');
+  if (!myProfile.name) myProfile.name = "User_" + myPassword.substring(0, 4);
+
+  async function saveMyProfileData() {
+    localStorage.setItem('app_chat_my_profile', JSON.stringify(myProfile));
+    updateMyProfileUI();
+    await setDoc(doc(db, "users", myPassword), {
+      pass: myPassword,
+      name: myProfile.name,
+      statusMsg: myProfile.statusMsg || "",
+      avatar: myProfile.avatar || "",
+      bg: myProfile.bg || "",
+      avatarPos: myProfile.avatarPos || "center",
+      bgPos: myProfile.bgPos || "center",
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  }
+
+  window.openSettingsModal = function() { document.getElementById('settingsModal').style.display = 'flex'; };
+  window.closeSettingsModal = function() { document.getElementById('settingsModal').style.display = 'none'; };
+
+  window.handleChatBgUpload = async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        selectedBgImage = await uploadImageToImgur(e.target.result);
+        localStorage.setItem('app_chat_bg_image', selectedBgImage);
+        applyThemeSettings();
+      } catch(err) {
+        console.error(err);
+        alert('画像のアップロードに失敗しました');
+      }
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  window.handleChatBgPosChange = function(event) {
+    selectedBgPos = event.target.value;
+    localStorage.setItem('app_chat_bg_pos', selectedBgPos);
+    applyThemeSettings();
+  };
+
+  window.resetChatBg = function() {
+    selectedBgImage = '';
+    localStorage.removeItem('app_chat_bg_image');
+    applyThemeSettings();
+  };
+
+  window.handleColorChange = function(event) {
+    selectedColor = event.target.value;
+    localStorage.setItem('app_chat_selected_color', selectedColor);
+    applyThemeSettings();
+  };
+
+  window.handleTextColorChange = function(event) {
+    selectedTextColor = event.target.value;
+    localStorage.setItem('app_chat_text_color', selectedTextColor);
+    applyThemeSettings();
+  };
+
+  window.handleBorderSettingChange = function() {
+    borderWidth = document.getElementById('borderWidthSelect').value;
+    borderStyle = document.getElementById('borderStyleSelect').value;
+    borderColor = document.getElementById('borderColorPicker').value;
+
+    localStorage.setItem('app_chat_border_width', borderWidth);
+    localStorage.setItem('app_chat_border_style', borderStyle);
+    localStorage.setItem('app_chat_border_color', borderColor);
+
+    applyThemeSettings();
+  };
+
+  const lockChannel = new BroadcastChannel('app_chat_tab_lock');
+  lockChannel.postMessage({ type: 'PING' });
+  lockChannel.onmessage = (e) => {
+    if (e.data.type === 'PING') lockChannel.postMessage({ type: 'PONG' });
+    else if (e.data.type === 'PONG') document.getElementById('blockOverlay').style.display = 'flex';
+  };
+
+  let friendRequests = [], friends = [], groups = [], openChats = [];
+  let allRoomsData = [];
+  let currentRoomId = null, currentRoomType = null, targetFriendPass = null;
+  let userProfilesCache = {};
+  let currentRoomMembers = [];
+  let unsubscribeChat = null;
+  let currentAnnounceDocId = null;
+  let currentReplyToMsg = null;
+
+  function updateMyProfileUI() {
+    document.getElementById('myPassDisplay').textContent = myPassword;
+    document.getElementById('profileName').textContent = myProfile.name;
+    document.getElementById('profileStatusMsg').textContent = myProfile.statusMsg || "ステータスメッセージ未設定";
+    
+    const avatarEl = document.getElementById('homeMyAvatar');
+    if (myProfile.avatar) {
+      avatarEl.style.backgroundImage = `url(${myProfile.avatar})`;
+      avatarEl.style.backgroundPosition = myProfile.avatarPos || 'center';
+      avatarEl.textContent = '';
+    } else {
+      avatarEl.style.backgroundImage = 'none';
+      avatarEl.textContent = myProfile.name.charAt(0).toUpperCase();
+    }
+    userProfilesCache[myPassword] = myProfile;
+  }
+
+  updateMyProfileUI();
+  applyThemeSettings();
+  saveMyProfileData();
+
+  async function fetchUserProfile(userPass) {
+    if (userProfilesCache[userPass]) return userProfilesCache[userPass];
+    const snap = await getDoc(doc(db, "users", userPass));
+    if (snap.exists()) {
+      userProfilesCache[userPass] = snap.data();
+      return snap.data();
+    }
+    return null;
+  }
+
+  onSnapshot(collection(db, "users"), (snapshot) => {
+    snapshot.docs.forEach(docSnap => {
+      userProfilesCache[docSnap.id] = docSnap.data();
+    });
+    if (currentRoomId) renderChatRoomUI();
+  });
+
+  window.switchTab = function(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+    const headerTitle = document.getElementById('headerTitle');
+
+    if (tabName === 'home') {
+      document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      document.getElementById('viewHome').classList.add('active');
+      headerTitle.textContent = 'HOME';
+    } else if (tabName === 'chats') {
+      document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      document.getElementById('viewChats').classList.add('active');
+      headerTitle.textContent = 'CHATS';
+      renderChatsView();
+    } else if (tabName === 'friends') {
+      document.querySelectorAll('.tab-btn')[2].classList.add('active');
+      document.getElementById('viewFriends').classList.add('active');
+      headerTitle.textContent = 'FRIENDS';
+      renderFriendsView();
+    } else if (tabName === 'groups') {
+      document.querySelectorAll('.tab-btn')[3].classList.add('active');
+      document.getElementById('viewGroups').classList.add('active');
+      headerTitle.textContent = 'GROUPS';
+      renderGroupsView();
+    } else if (tabName === 'open') {
+      document.querySelectorAll('.tab-btn')[4].classList.add('active');
+      document.getElementById('viewOpen').classList.add('active');
+      headerTitle.textContent = 'OPEN CHAT';
+      renderOpenChatsView();
+    } else if (tabName === 'secret') {
+      document.querySelectorAll('.tab-btn')[5].classList.add('active');
+      document.getElementById('viewSecret').classList.add('active');
+      headerTitle.textContent = 'SECRET';
+      initSecretLibrary();
+    } else if (tabName === 'chat') {
+      document.getElementById('viewChatRoom').classList.add('active');
+      headerTitle.textContent = 'CHAT';
+      applyThemeSettings();
+      scrollToBottom(true);
+    }
+  };
+
+  onSnapshot(query(collection(db, "friend_requests"), where("toPass", "==", myPassword)), (snapshot) => {
+    friendRequests = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderFriendsView();
+  });
+
+  onSnapshot(doc(db, "users", myPassword), (snapshot) => {
+    if (snapshot.exists()) {
+      friends = snapshot.data().friends || [];
+      renderFriendsView();
+      listenToAllChats();
+    }
+  });
+
+  onSnapshot(query(collection(db, "groups"), where("members", "array-contains", myPassword)), (snapshot) => {
+    groups = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderGroupsView();
+    listenToAllChats();
+  });
+
+  onSnapshot(collection(db, "open_chats"), (snapshot) => {
+    openChats = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderOpenChatsView();
+    listenToAllChats();
+  });
+
+  let roomListeners = {};
+  function listenToAllChats() {
+    let targets = [];
+
+    friends.forEach(f => {
+      const sorted = [myPassword, f.pass].sort();
+      targets.push({ id: `direct_${sorted[0]}_${sorted[1]}`, type: 'direct', name: f.name, pass: f.pass });
+    });
+    groups.forEach(g => {
+      targets.push({ id: g.id, type: 'group', name: g.name, icon: g.icon, iconPos: g.iconPos });
+    });
+    openChats.forEach(oc => {
+      targets.push({ id: oc.id, type: 'open', name: oc.name });
+    });
+
+    targets.forEach(t => {
+      if (!roomListeners[t.id]) {
+        const q = query(collection(db, "rooms", t.id, "messages"), orderBy("timestamp", "desc"));
+        roomListeners[t.id] = onSnapshot(q, (snapshot) => {
+          let unreadCount = 0;
+          let lastMsg = null;
+          let lastTime = 0;
+
+          if (!snapshot.empty) {
+            const docs = snapshot.docs;
+            const topDoc = docs[0].data();
+            lastMsg = topDoc.type === 'text' ? topDoc.content : `[${topDoc.type.toUpperCase()}]`;
+            lastTime = topDoc.timestamp ? topDoc.timestamp.toMillis() : Date.now();
+
+            docs.forEach(d => {
+              const data = d.data();
+              if (data.userPass !== myPassword && (!data.readBy || !data.readBy.includes(myPassword))) {
+                unreadCount++;
+              }
+            });
+          }
+
+          const idx = allRoomsData.findIndex(r => r.id === t.id);
+          const roomObj = { ...t, lastMsg, lastTime, unreadCount };
+          if (idx >= 0) allRoomsData[idx] = roomObj;
+          else allRoomsData.push(roomObj);
+
+          updateTotalUnreadBadge();
+          if (document.getElementById('viewChats').classList.contains('active')) {
+            renderChatsView();
+          }
+        });
+      }
+    });
+  }
+
+  function updateTotalUnreadBadge() {
+    let totalUnread = allRoomsData.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0);
+    const badge = document.getElementById('navChatsBadge');
+    if (totalUnread > 0) {
+      badge.textContent = totalUnread;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  async function renderChatsView() {
+    const listEl = document.getElementById('chatsList');
+    const sortedRooms = [...allRoomsData].filter(r => r.lastMsg !== null).sort((a,b) => b.lastTime - a.lastTime);
+
+    if (sortedRooms.length === 0) {
+      listEl.innerHTML = '<p style="font-size: 12px; color: var(--text-sub);">トーク履歴がありません</p>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    for (const r of sortedRooms) {
+      let displayName = r.name;
+      let avatarStyle = '';
+      let initial = 'C';
+
+      if (r.type === 'direct') {
+        const prof = await fetchUserProfile(r.pass) || {};
+        displayName = prof.name || r.name;
+        if (prof.avatar) avatarStyle = `background-image: url(${prof.avatar}); background-position: ${prof.avatarPos || 'center'}; color: transparent;`;
+        initial = displayName.charAt(0).toUpperCase();
+      } else if (r.type === 'group') {
+        if (r.icon) avatarStyle = `background-image: url(${r.icon}); background-position: ${r.iconPos || 'center'}; color: transparent;`;
+        initial = displayName.charAt(0).toUpperCase();
+      } else {
+        avatarStyle = `background: var(--accent-color); color:#fff;`;
+        initial = 'OPEN';
+      }
+
+      const dateStr = r.lastTime ? new Date(r.lastTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+      const unreadHtml = r.unreadCount > 0 ? `<span class="unread-badge">${r.unreadCount}</span>` : '';
+
+      const item = document.createElement('div');
+      item.className = 'card-item';
+      item.onclick = () => {
+        if (r.type === 'direct') targetFriendPass = r.pass;
+        openChatRoom(r.id, r.type);
+      };
+
+      item.innerHTML = `
+        <div class="card-left">
+          <div class="card-avatar" style="${avatarStyle}">${avatarStyle ? '' : initial}</div>
+          <div class="card-info">
+            <span class="card-name">${escapeHTML(displayName)}</span>
+            <span class="card-sub">${escapeHTML(r.lastMsg || '')}</span>
+          </div>
+        </div>
+        <div class="card-right">
+          <span class="card-time">${dateStr}</span>
+          ${unreadHtml}
+        </div>
+      `;
+      listEl.appendChild(item);
+    }
+  }
+
+  window.sendFriendRequest = async function(customPass) {
+    const input = document.getElementById('targetPassInput');
+    const targetPass = customPass || (input ? input.value.trim() : '');
+    if (!targetPass || targetPass === myPassword) return alert('有効なPASSを入力してください');
+
+    const targetDoc = await getDoc(doc(db, "users", targetPass));
+    if (!targetDoc.exists()) return alert('指定のユーザーが見つかりません');
+
+    await addDoc(collection(db, "friend_requests"), {
+      fromPass: myPassword,
+      fromName: myProfile.name,
+      toPass: targetPass,
+      timestamp: serverTimestamp()
+    });
+    alert('申請を送信しました');
+    if (input) input.value = '';
+  };
+
+  window.acceptRequest = async function(reqId, fromPass, fromName) {
+    await updateDoc(doc(db, "users", myPassword), { friends: arrayUnion({ pass: fromPass, name: fromName }) });
+    await updateDoc(doc(db, "users", fromPass), { friends: arrayUnion({ pass: myPassword, name: myProfile.name }) });
+    await deleteDoc(doc(db, "friend_requests", reqId));
+  };
+
+  window.rejectRequest = async function(reqId) {
+    await deleteDoc(doc(db, "friend_requests", reqId));
+  };
+
+  function renderFriendsView() {
+    const reqListEl = document.getElementById('requestsList');
+    const friendListEl = document.getElementById('friendsList');
+    const searchQuery = (document.getElementById('targetPassInput')?.value || '').toLowerCase().trim();
+
+    if (friendRequests.length === 0) {
+      reqListEl.innerHTML = '<p style="font-size: 12px; color: var(--text-sub);">リクエストはありません</p>';
+    } else {
+      reqListEl.innerHTML = '';
+      friendRequests.forEach(req => {
+        const item = document.createElement('div');
+        item.className = 'card-item';
+        item.innerHTML = `
+          <div class="card-left">
+            <div class="card-avatar" onclick="openUserProfileModal('${req.fromPass}')">${req.fromName ? req.fromName.charAt(0).toUpperCase() : 'U'}</div>
+            <div class="card-info"><span class="card-name">${escapeHTML(req.fromName)}</span><span class="card-sub">PASS: ${req.fromPass}</span></div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-primary" onclick="acceptRequest('${req.id}', '${req.fromPass}', '${req.fromName}')">承認</button>
+            <button class="btn btn-danger" onclick="rejectRequest('${req.id}')">拒否</button>
+          </div>
+        `;
+        reqListEl.appendChild(item);
+      });
+    }
+
+    const filteredFriends = friends.filter(f => {
+      if (!searchQuery) return true;
+      const prof = userProfilesCache[f.pass] || {};
+      const name = (prof.name || f.name || '').toLowerCase();
+      return name.includes(searchQuery) || f.pass.toLowerCase().includes(searchQuery);
+    });
+
+    if (filteredFriends.length === 0) {
+      friendListEl.innerHTML = '<p style="font-size: 12px; color: var(--text-sub);">該当する友達はいません</p>';
+    } else {
+      friendListEl.innerHTML = '';
+      filteredFriends.forEach(async (f) => {
+        const prof = await fetchUserProfile(f.pass) || {};
+        const displayName = prof.name || f.name;
+        const avatarBg = prof.avatar ? `background-image: url(${prof.avatar}); background-position: ${prof.avatarPos || 'center'}; color: transparent;` : '';
+        const item = document.createElement('div');
+        item.className = 'card-item';
+        item.innerHTML = `
+          <div class="card-left">
+            <div class="card-avatar" style="${avatarBg}" onclick="openUserProfileModal('${f.pass}')">${avatarBg ? '' : displayName.charAt(0).toUpperCase()}</div>
+            <div class="card-info"><span class="card-name">${escapeHTML(displayName)}</span><span class="card-sub">PASS: ${f.pass}</span></div>
+          </div>
+          <button class="btn btn-primary" onclick="openDirectChat('${f.pass}')">トーク</button>
+        `;
+        friendListEl.appendChild(item);
+      });
+    }
+  }
+
+  window.openDirectChat = function(friendPass) {
+    const sorted = [myPassword, friendPass].sort();
+    targetFriendPass = friendPass;
+    openChatRoom(`direct_${sorted[0]}_${sorted[1]}`, 'direct');
+  };
+
+  let secretPin = localStorage.getItem('app_secret_pin') || null;
+  let isSecretUnlocked = false;
+
+  function initSecretLibrary() {
+    const inputEl = document.getElementById('secretPinInput');
+    inputEl.value = '';
+    document.getElementById('pinTitleText').textContent = secretPin ? 'シークレットPIN入力' : 'PIN（4桁）を設定';
+
+    if (isSecretUnlocked) {
+      document.getElementById('secretAuthArea').style.display = 'none';
+      document.getElementById('secretContentArea').style.display = 'flex';
+      renderSecretItems();
+    } else {
+      document.getElementById('secretAuthArea').style.display = 'flex';
+      document.getElementById('secretContentArea').style.display = 'none';
+    }
+  }
+
+  window.unlockSecretLibrary = function() {
+    const val = document.getElementById('secretPinInput').value.trim();
+    if (val.length !== 4 || !/^\d+$/.test(val)) return alert('4桁の数字を入力してください');
+
+    if (!secretPin) {
+      secretPin = val;
+      localStorage.setItem('app_secret_pin', secretPin);
+      isSecretUnlocked = true;
+      initSecretLibrary();
+    } else if (val === secretPin) {
+      isSecretUnlocked = true;
+      initSecretLibrary();
+    } else {
+      alert('PINが違います');
+    }
+  };
+
+  function renderSecretItems() {
+    onSnapshot(query(collection(db, "users", myPassword, "secret_library"), orderBy("timestamp", "desc")), (snapshot) => {
+      const grid = document.getElementById('secretGrid');
+      grid.innerHTML = '';
+      if (snapshot.empty) {
+        grid.innerHTML = '<p style="font-size: 12px; color: var(--text-sub); grid-column: span 3;">ファイルはありません</p>';
+        return;
+      }
+      snapshot.docs.forEach(docSnap => {
+        const item = docSnap.data();
+        const card = document.createElement('div');
+        card.className = 'secret-media-card';
+        const delBtn = document.createElement('button');
+        delBtn.className = 'secret-delete-btn';
+        delBtn.textContent = '✕';
+        delBtn.onclick = () => deleteDoc(doc(db, "users", myPassword, "secret_library", docSnap.id));
+
+        if (item.type === 'image') {
+          const img = document.createElement('img');
+          img.src = item.content;
+          img.style.objectPosition = item.position || 'center';
+          img.onclick = () => openLightbox(item.content, 'image');
+          card.appendChild(img);
+        } else {
+          const video = document.createElement('video');
+          video.src = item.content; video.controls = true;
+          card.appendChild(video);
+        }
+        card.appendChild(delBtn);
+        grid.appendChild(card);
+      });
+    });
+  }
+
+  let tempCropImageData = "";
+  window.openSecretCropModal = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      tempCropImageData = e.target.result;
+      document.getElementById('cropPreviewImg').src = tempCropImageData;
+      document.getElementById('cropConfirmBtn').setAttribute('onclick', 'confirmSaveSecretImage()');
+      document.getElementById('imageCropModal').style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  window.confirmSaveSecretImage = async function() {
+    if (!tempCropImageData) return;
+    const pos = document.getElementById('cropPositionSelect').value;
+    try {
+      const link = await uploadImageToImgur(tempCropImageData);
+      await addDoc(collection(db, "users", myPassword, "secret_library"), {
+        type: 'image', content: link, position: pos, timestamp: serverTimestamp()
+      });
+    } catch(e) {
+      console.error(e);
+      alert('保存に失敗しました');
+    }
+    closeImageCropModal();
+  };
+
+  window.handleSecretVideoUpload = function(event) {
+    const file = event.target.files[0];
+    if (!file || file.size > 10 * 1024 * 1024) return alert('10MB以下の動画にしてください');
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      await addDoc(collection(db, "users", myPassword, "secret_library"), {
+        type: 'video', content: e.target.result, timestamp: serverTimestamp()
+      });
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  let tempGroupIcon = "";
+  window.handleGroupIconSelect = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      tempGroupIcon = e.target.result;
+      const previewArea = document.getElementById('groupIconPreviewArea');
+      const previewEl = document.getElementById('groupIconPreview');
+      previewEl.style.backgroundImage = `url(${tempGroupIcon})`;
+      previewEl.style.backgroundPosition = document.getElementById('groupIconPosSelect').value;
+      previewArea.style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+  };
+
+  function renderGroupsView() {
+    const selectEl = document.getElementById('createGroupFriendsSelect');
+    selectEl.innerHTML = '';
+    friends.forEach(f => {
+      const item = document.createElement('label');
+      item.className = 'friend-checkbox-item';
+      item.innerHTML = `<input type="checkbox" value="${f.pass}"> ${escapeHTML(f.name)}`;
+      selectEl.appendChild(item);
+    });
+
+    const groupListEl = document.getElementById('groupList');
+    if (groups.length === 0) {
+      groupListEl.innerHTML = '<p style="font-size: 12px; color: var(--text-sub);">グループはありません</p>';
+    } else {
+      groupListEl.innerHTML = '';
+      groups.forEach(g => {
+        const iconStyle = g.icon ? `background-image: url(${g.icon}); background-position: ${g.iconPos || 'center'}; color: transparent;` : '';
+        const item = document.createElement('div');
+        item.className = 'card-item';
+        item.innerHTML = `
+          <div class="card-left">
+            <div class="card-avatar" style="${iconStyle}">${iconStyle ? '' : g.name.charAt(0).toUpperCase()}</div>
+            <div class="card-info"><span class="card-name">${escapeHTML(g.name)}</span><span class="card-sub">${g.members.length}人</span></div>
+          </div>
+          <button class="btn btn-secondary" onclick="openChatRoom('${g.id}', 'group')">開く</button>
+        `;
+        groupListEl.appendChild(item);
+      });
+    }
+  }
+
+  window.createGroup = async function() {
+    const nameInput = document.getElementById('newGroupName');
+    const name = nameInput.value.trim();
+    if (!name) return alert('グループ名を入力してください');
+    const selectedPasses = Array.from(document.querySelectorAll('#createGroupFriendsSelect input:checked')).map(cb => cb.value);
+
+    let iconUrl = "";
+    if (tempGroupIcon) {
+      try {
+        iconUrl = await uploadImageToImgur(tempGroupIcon);
+      } catch(e) { console.error(e); }
+    }
+
+    await addDoc(collection(db, "groups"), {
+      name, members: [myPassword, ...selectedPasses],
+      icon: iconUrl, iconPos: document.getElementById('groupIconPosSelect').value,
+      createdAt: serverTimestamp()
+    });
+
+    nameInput.value = ''; tempGroupIcon = '';
+    document.getElementById('groupIconPreviewArea').style.display = 'none';
+  };
+
+  function renderOpenChatsView() {
+    const openListEl = document.getElementById('openChatList');
+    const searchQuery = (document.getElementById('openChatSearchInput')?.value || '').toLowerCase().trim();
+
+    const filteredChats = openChats.filter(oc => {
+      if (!searchQuery) return true;
+      return (oc.name || '').toLowerCase().includes(searchQuery);
+    });
+
+    if (filteredChats.length === 0) {
+      openListEl.innerHTML = '<p style="font-size: 12px; color: var(--text-sub);">オープンチャットはありません</p>';
+    } else {
+      openListEl.innerHTML = '';
+      filteredChats.forEach(oc => {
+        const item = document.createElement('div');
+        item.className = 'card-item';
+        item.innerHTML = `
+          <div class="card-left">
+            <div class="card-avatar" style="background:var(--accent-color); color:#fff;">OPEN</div>
+            <div class="card-info"><span class="card-name">${escapeHTML(oc.name)}</span></div>
+          </div>
+          <button class="btn btn-primary" onclick="openChatRoom('${oc.id}', 'open')">参加</button>
+        `;
+        openListEl.appendChild(item);
+      });
+    }
+  }
+
+  window.createOpenChat = async function() {
+    const input = document.getElementById('newOpenChatName');
+    const roomName = input.value.trim();
+    if (!roomName) return alert('部屋名を入力してください');
+    await addDoc(collection(db, "open_chats"), { name: roomName, createdAt: serverTimestamp() });
+    input.value = '';
+  };
+
+  function scrollToBottom(smooth = true) {
+    const chatMsgs = document.getElementById('chatMessages');
+    if (chatMsgs) {
+      chatMsgs.scrollTo({
+        top: chatMsgs.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
+  }
+
+  window.openLightbox = function(url, type) {
+    const container = document.getElementById('lightboxMediaContainer');
+    const downloadBtn = document.getElementById('lightboxDownloadBtn');
+    container.innerHTML = '';
+    downloadBtn.href = url;
+
+    if (type === 'image') {
+      const img = document.createElement('img');
+      img.src = url; img.className = 'lightbox-content';
+      container.appendChild(img);
+    } else {
+      const video = document.createElement('video');
+      video.src = url; video.controls = true; video.autoplay = true;
+      video.className = 'lightbox-content';
+      container.appendChild(video);
+    }
+    document.getElementById('lightboxModal').style.display = 'flex';
+  };
+
+  window.closeLightbox = function(e) {
+    if (!e || e.target.id === 'lightboxModal') {
+      document.getElementById('lightboxModal').style.display = 'none';
+      document.getElementById('lightboxMediaContainer').innerHTML = '';
+    }
+  };
+
+  window.openChatRoom = async function(roomId, type) {
+    currentRoomId = roomId;
+    currentRoomType = type;
+    cancelReply();
+    await renderChatRoomUI();
+
+    if (unsubscribeChat) unsubscribeChat();
+
+    onSnapshot(doc(db, "rooms", roomId), (docSnap) => {
+      const data = docSnap.data();
+      const annBar = document.getElementById('announcementBar');
+      if (data && data.announcement) {
+        document.getElementById('announcementText').textContent = `📌 ${data.announcement.text}`;
+        currentAnnounceDocId = data.announcement.msgId;
+        annBar.style.display = 'flex';
+      } else {
+        annBar.style.display = 'none';
+        currentAnnounceDocId = null;
+      }
+    });
+
+    const q = query(collection(db, "rooms", roomId, "messages"), orderBy("timestamp", "asc"));
+    unsubscribeChat = onSnapshot(q, (snapshot) => {
+      document.getElementById('chatMessages').innerHTML = '';
+      const memberPasses = new Set();
+      let unreadMentionCount = 0;
+
+      if (type === 'group') {
+        const g = groups.find(i => i.id === roomId);
+        if (g) g.members.forEach(m => memberPasses.add(m));
+      }
+
+      snapshot.docs.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.userPass) memberPasses.add(data.userPass);
+
+        if (data.userPass !== myPassword && (!data.readBy || !data.readBy.includes(myPassword))) {
+          updateDoc(doc(db, "rooms", roomId, "messages", docSnap.id), {
+            readBy: arrayUnion(myPassword)
+          });
+        }
+
+        if (data.mentions && data.mentions.includes(myPassword) && data.userPass !== myPassword) {
+          unreadMentionCount++;
+        }
+
+        displayMessage(docSnap.id, data);
+      });
+
+      currentRoomMembers = Array.from(memberPasses);
+
+      const badge = document.getElementById('navGroupBadge');
+      if (unreadMentionCount > 0) {
+        badge.textContent = `通知${unreadMentionCount}`;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+
+      scrollToBottom(true);
+    });
+
+    switchTab('chat');
+  };
+
+  async function renderChatRoomUI() {
+    let roomName = "---";
+    const inviteBtn = document.getElementById('groupInviteBtn');
+    const membersBtn = document.getElementById('membersListBtn');
+    const roomAvatarEl = document.getElementById('chatRoomAvatar');
+
+    if (currentRoomType === 'direct') {
+      const prof = await fetchUserProfile(targetFriendPass) || {};
+      roomName = prof.name || ("User_" + targetFriendPass.substring(0, 4));
+      if (prof.avatar) {
+        roomAvatarEl.style.backgroundImage = `url(${prof.avatar})`;
+        roomAvatarEl.style.backgroundPosition = prof.avatarPos || 'center';
+        roomAvatarEl.style.color = 'transparent';
+        roomAvatarEl.textContent = '';
+      } else {
+        roomAvatarEl.style.backgroundImage = 'none';
+        roomAvatarEl.style.color = 'var(--text-main)';
+        roomAvatarEl.textContent = roomName.charAt(0).toUpperCase();
+      }
+      roomAvatarEl.style.display = 'flex';
+      inviteBtn.style.display = 'none';
+      membersBtn.style.display = 'none';
+    } else if (currentRoomType === 'group') {
+      const g = groups.find(i => i.id === currentRoomId);
+      if (g) {
+        roomName = g.name;
+        if (g.icon) {
+          roomAvatarEl.style.backgroundImage = `url(${g.icon})`;
+          roomAvatarEl.style.backgroundPosition = g.iconPos || 'center';
+          roomAvatarEl.style.color = 'transparent';
+          roomAvatarEl.textContent = '';
+        } else {
+          roomAvatarEl.style.backgroundImage = 'none';
+          roomAvatarEl.style.color = 'var(--text-main)';
+          roomAvatarEl.textContent = g.name.charAt(0).toUpperCase();
+        }
+        roomAvatarEl.style.display = 'flex';
+      }
+      inviteBtn.style.display = 'block';
+      membersBtn.style.display = 'block';
+    } else {
+      const oc = openChats.find(i => i.id === currentRoomId);
+      if (oc) roomName = oc.name;
+      roomAvatarEl.style.display = 'none';
+      inviteBtn.style.display = 'none';
+      membersBtn.style.display = 'block';
+    }
+    document.getElementById('chatRoomName').textContent = roomName;
+  }
+
+  window.openMembersModal = async function() {
+    const listEl = document.getElementById('membersList');
+    listEl.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">読み込み中...</p>';
+    document.getElementById('membersModal').style.display = 'flex';
+
+    if (currentRoomMembers.length === 0) {
+      listEl.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">参加者がいません</p>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    for (const pass of currentRoomMembers) {
+      const prof = await fetchUserProfile(pass) || {};
+      const isMe = pass === myPassword;
+      const isFriend = friends.some(f => f.pass === pass);
+      const name = prof.name || ("User_" + pass.substring(0, 4));
+      const avatarStyle = prof.avatar ? `background-image: url(${prof.avatar}); background-position: ${prof.avatarPos || 'center'}; color: transparent;` : '';
+
+      const item = document.createElement('div');
+      item.className = 'card-item';
+      item.innerHTML = `
+        <div class="card-left">
+          <div class="card-avatar" style="${avatarStyle}" onclick="openUserProfileModal('${pass}')">${avatarStyle ? '' : name.charAt(0).toUpperCase()}</div>
+          <div class="card-info">
+            <span class="card-name">${escapeHTML(name)} ${isMe ? '(自分)' : ''}</span>
+            <span class="card-sub">PASS: ${pass}</span>
+          </div>
+        </div>
+        ${!isMe && !isFriend ? `<button class="btn btn-primary" onclick="sendFriendRequest('${pass}')">友達申請</button>` : ''}
+        ${!isMe && isFriend ? `<span style="font-size:11px; color:var(--text-sub);">友達</span>` : ''}
+      `;
+      listEl.appendChild(item);
+    }
+  };
+
+  window.closeMembersModal = function() {
+    document.getElementById('membersModal').style.display = 'none';
+  };
+
+  window.openReadUsersModal = async function(readByPasses) {
+    const listEl = document.getElementById('readUsersList');
+    listEl.innerHTML = '';
+    document.getElementById('readUsersModal').style.display = 'flex';
+
+    if (!readByPasses || readByPasses.length === 0) {
+      listEl.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">まだ既読はありません</p>';
+      return;
+    }
+
+    for (const pass of readByPasses) {
+      const prof = await fetchUserProfile(pass) || {};
+      const name = prof.name || ("User_" + pass.substring(0, 4));
+      const avatarStyle = prof.avatar ? `background-image: url(${prof.avatar}); background-position: ${prof.avatarPos || 'center'}; color: transparent;` : '';
+
+      const item = document.createElement('div');
+      item.className = 'card-item';
+      item.innerHTML = `
+        <div class="card-left">
+          <div class="card-avatar" style="${avatarStyle}">${avatarStyle ? '' : name.charAt(0).toUpperCase()}</div>
+          <div class="card-info">
+            <span class="card-name">${escapeHTML(name)}</span>
+            <span class="card-sub">PASS: ${pass}</span>
+          </div>
+        </div>
+      `;
+      listEl.appendChild(item);
+    }
+  };
+
+  window.closeReadUsersModal = function() {
+    document.getElementById('readUsersModal').style.display = 'none';
+  };
+
+  window.scrollToAnnouncedMessage = function() {
+    if (!currentAnnounceDocId) return;
+    const el = document.getElementById(`msg-${currentAnnounceDocId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  window.removeAnnouncement = async function() {
+    await setDoc(doc(db, "rooms", currentRoomId), { announcement: null }, { merge: true });
+  };
+
+  window.actionReplyMessage = function() {
+    if (!selectedMsgContext) return;
+    currentReplyToMsg = selectedMsgContext;
+    const bar = document.getElementById('replyBar');
+    const textEl = document.getElementById('replyTargetText');
+    const snippet = selectedMsgContext.type === 'text' ? selectedMsgContext.content : `[${selectedMsgContext.type.toUpperCase()}]`;
+    textEl.textContent = `返信先 (${selectedMsgContext.userName}): ${snippet}`;
+    bar.style.display = 'flex';
+    document.getElementById('msgActionMenu').style.display = 'none';
+    document.getElementById('messageInput').focus();
+  };
+
+  window.cancelReply = function() {
+    currentReplyToMsg = null;
+    document.getElementById('replyBar').style.display = 'none';
+  };
+
+  let selectedMsgContext = null;
+  let touchTimer = null;
+
+  function attachMessageEvents(el, msgData) {
+    el.addEventListener('touchstart', (e) => {
+      touchTimer = setTimeout(() => {
+        openMsgActionMenu(e.touches[0].clientX, e.touches[0].clientY, msgData);
+      }, 400);
+    }, { passive: true });
+
+    el.addEventListener('touchend', () => clearTimeout(touchTimer));
+    el.addEventListener('touchmove', () => clearTimeout(touchTimer));
+
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      openMsgActionMenu(e.clientX, e.clientY, msgData);
+    });
+  }
+
+  function openMsgActionMenu(x, y, msgData) {
+    selectedMsgContext = msgData;
+    const menu = document.getElementById('msgActionMenu');
+    
+    const unsendBtn = document.getElementById('unsendMenuBtn');
+    unsendBtn.style.display = (msgData.userPass === myPassword && !msgData.isUnsent) ? 'block' : 'none';
+
+    menu.style.display = 'flex';
+    menu.style.left = Math.min(x, window.innerWidth - 170) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - 250) + 'px';
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#msgActionMenu')) {
+      document.getElementById('msgActionMenu').style.display = 'none';
+    }
+  });
+
+  window.addReaction = async function(emoji) {
+    if (!selectedMsgContext || !currentRoomId) return;
+    const msgRef = doc(db, "rooms", currentRoomId, "messages", selectedMsgContext.id);
+    const existingReactions = selectedMsgContext.reactions || {};
+
+    let userList = existingReactions[emoji] || [];
+    if (userList.includes(myPassword)) {
+      userList = userList.filter(p => p !== myPassword);
+    } else {
+      userList.push(myPassword);
+    }
+
+    if (userList.length === 0) {
+      delete existingReactions[emoji];
+    } else {
+      existingReactions[emoji] = userList;
+    }
+
+    await updateDoc(msgRef, { reactions: existingReactions });
+    document.getElementById('msgActionMenu').style.display = 'none';
+  };
+
+  window.actionCopyMessage = function() {
+    if (!selectedMsgContext) return;
+    const text = selectedMsgContext.type === 'text' ? selectedMsgContext.content : selectedMsgContext.content;
+    navigator.clipboard.writeText(text);
+    alert('コピーしました');
+    document.getElementById('msgActionMenu').style.display = 'none';
+  };
+
+  window.actionAnnounceMessage = async function() {
+    if (!selectedMsgContext) return;
+    const text = selectedMsgContext.isUnsent ? '送信取り消しされたメッセージ' : 
+                 (selectedMsgContext.type === 'text' ? selectedMsgContext.content : `[${selectedMsgContext.type.toUpperCase()}]`);
+
+    await setDoc(doc(db, "rooms", currentRoomId), {
+      announcement: {
+        msgId: selectedMsgContext.id,
+        text: `${selectedMsgContext.userName}: ${text}`
+      }
+    }, { merge: true });
+    document.getElementById('msgActionMenu').style.display = 'none';
+  };
+
+  window.actionDeleteMessage = function() {
+    if (!selectedMsgContext) return;
+    const localDeleted = JSON.parse(localStorage.getItem('app_deleted_msgs') || '[]');
+    localDeleted.push(selectedMsgContext.id);
+    localStorage.setItem('app_deleted_msgs', JSON.stringify(localDeleted));
+
+    const el = document.getElementById(`msg-${selectedMsgContext.id}`);
+    if (el) el.remove();
+    document.getElementById('msgActionMenu').style.display = 'none';
+  };
+
+  window.actionUnsendMessage = async function() {
+    if (!selectedMsgContext || selectedMsgContext.userPass !== myPassword) return;
+    
+    await updateDoc(doc(db, "rooms", currentRoomId, "messages", selectedMsgContext.id), {
+      isUnsent: true,
+      content: ''
+    });
+    document.getElementById('msgActionMenu').style.display = 'none';
+  };
+
+  window.actionReportMessage = async function() {
+    if (!selectedMsgContext) return;
+    await addDoc(collection(db, "reports"), {
+      reporter: myPassword,
+      reportedUser: selectedMsgContext.userPass,
+      messageId: selectedMsgContext.id,
+      content: selectedMsgContext.content,
+      timestamp: serverTimestamp()
+    });
+    alert('メッセージを通報しました');
+    document.getElementById('msgActionMenu').style.display = 'none';
+  };
+
+  function displayMessage(docId, data) {
+    const localDeleted = JSON.parse(localStorage.getItem('app_deleted_msgs') || '[]');
+    if (localDeleted.includes(docId)) return;
+
+    const chatMessages = document.getElementById('chatMessages');
+    const msgData = { id: docId, ...data };
+
+    if (data.isUnsent) {
+      const systemDiv = document.createElement('div');
+      systemDiv.className = 'message system';
+      systemDiv.id = `msg-${docId}`;
+      const senderProf = userProfilesCache[data.userPass] || {};
+      const name = senderProf.name || data.userName || "ユーザー";
+      systemDiv.innerHTML = `<div class="system-bubble">${escapeHTML(name)} が送信を取り消しました</div>`;
+      chatMessages.appendChild(systemDiv);
+      return;
+    }
+
+    const isMe = data.userPass === myPassword;
+    const messageDiv = document.createElement('div');
+    messageDiv.className = isMe ? 'message me' : 'message other';
+    messageDiv.id = `msg-${docId}`;
+
+    let replyHtml = '';
+    if (data.replyTo) {
+      replyHtml = `<div class="reply-preview-box">↳ ${escapeHTML(data.replyTo.userName)}: ${escapeHTML(data.replyTo.snippet)}</div>`;
+    }
+
+    let formattedContent = escapeHTML(data.content);
+    if (data.type === 'text' && formattedContent) {
+      formattedContent = formattedContent.replace(/@([^\s]+)/g, '<span class="mention-text">@$1</span>');
+    }
+
+    let isMentionedToMe = data.mentions && data.mentions.includes(myPassword) && !isMe;
+    let mentionNoticeHtml = isMentionedToMe ? `<div class="mentioned-notice">（メンションされました）</div>` : '';
+
+    let bodyContent = '';
+    if (data.type === 'image') {
+      bodyContent = `<img src="${data.content}" class="chat-media" style="object-position: ${data.imgPosition || 'center'};" onclick="openLightbox('${data.content}', 'image')" alt="画像" />`;
+    } else if (data.type === 'video') {
+      bodyContent = `<video src="${data.content}" class="chat-media" onclick="openLightbox('${data.content}', 'video')" playsinline></video>`;
+    } else {
+      bodyContent = `<div class="bubble">${formattedContent}</div>`;
+    }
+
+    let reactionsHtml = '';
+    if (data.reactions && Object.keys(data.reactions).length > 0) {
+      reactionsHtml = '<div class="reactions-wrapper">';
+      for (const [emoji, users] of Object.entries(data.reactions)) {
+        if (users && users.length > 0) {
+          const isActive = users.includes(myPassword) ? 'active' : '';
+          reactionsHtml += `
+            <div class="reaction-pill ${isActive}" onclick="selectedMsgContext={id:'${docId}', reactions:${JSON.stringify(data.reactions).replace(/"/g, '&quot;')}}; addReaction('${emoji}');">
+              <span>${emoji}</span>
+              <span>${users.length}</span>
+            </div>
+          `;
+        }
+      }
+      reactionsHtml += '</div>';
+    }
+
+    const readByList = data.readBy || [];
+    const readCount = readByList.filter(p => p !== data.userPass).length;
+    const readByJson = JSON.stringify(readByList).replace(/"/g, '&quot;');
+    const readHtml = readCount > 0 ? `<span class="read-status" onclick="openReadUsersModal(${readByJson})">既読 ${readCount}</span>` : '';
+
+    if (isMe) {
+      messageDiv.innerHTML = `
+        <div class="message-content">
+          <div class="bubble-wrapper">
+            ${replyHtml}
+            ${bodyContent}
+            ${reactionsHtml}
+            <div class="meta-info">
+              ${readHtml}
+              <span class="time">${data.time}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      const prof = userProfilesCache[data.userPass] || {};
+      const displayName = prof.name || data.userName || ("User_" + data.userPass.substring(0, 4));
+      const avatarUrl = prof.avatar || data.userAvatar || '';
+      const avatarPos = prof.avatarPos || data.userAvatarPos || 'center';
+      const avatarStyle = avatarUrl ? `background-image: url(${avatarUrl}); background-position: ${avatarPos}; color: transparent;` : '';
+      const initial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
+
+      messageDiv.innerHTML = `
+        <div class="avatar" style="${avatarStyle}" onclick="openUserProfileModal('${data.userPass}')">${avatarStyle ? '' : initial}</div>
+        <div class="message-content">
+          <span class="user-name">${escapeHTML(displayName)} (${data.userPass})</span>
+          <div class="bubble-wrapper">
+            ${mentionNoticeHtml}
+            ${replyHtml}
+            ${bodyContent}
+            ${reactionsHtml}
+            <div class="meta-info">
+              ${readHtml}
+              <span class="time">${data.time}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    attachMessageEvents(messageDiv, msgData);
+    chatMessages.appendChild(messageDiv);
+  }
+
+  window.autoResizeTextarea = function(el) {
+    el.style.height = '38px';
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+  };
+
+  window.handleKeyDown = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  let activeMentions = [];
+
+  window.handleInputMention = async function(e) {
+    const val = e.target.value;
+    const menu = document.getElementById('mentionMenu');
+    const atIndex = val.lastIndexOf('@');
+
+    if (atIndex !== -1 && atIndex === val.length - 1) {
+      menu.innerHTML = '';
+      const memberPasses = currentRoomMembers.length > 0 ? currentRoomMembers : friends.map(f => f.pass);
+      
+      for (const pass of memberPasses) {
+        if (pass === myPassword) continue;
+        const prof = await fetchUserProfile(pass) || {};
+        const name = prof.name || ("User_" + pass.substring(0, 4));
+
+        const item = document.createElement('div');
+        item.className = 'mention-item';
+        item.innerHTML = `<span style="font-weight:bold;">@${escapeHTML(name)}</span> <span style="font-size:10px; color:var(--text-sub);">(${pass})</span>`;
+        item.onclick = () => selectMentionUser(name, pass);
+        menu.appendChild(item);
+      }
+      menu.style.display = 'flex';
+    } else if (atIndex === -1) {
+      menu.style.display = 'none';
+    }
+  };
+
+  function selectMentionUser(name, pass) {
+    const input = document.getElementById('messageInput');
+    const atIndex = input.value.lastIndexOf('@');
+    input.value = input.value.substring(0, atIndex) + `@${name} `;
+    if (!activeMentions.includes(pass)) activeMentions.push(pass);
+    document.getElementById('mentionMenu').style.display = 'none';
+    input.focus();
+  }
+
+  window.sendMessage = async function() {
+    const input = document.getElementById('messageInput');
+    const text = input.value.trim();
+    if (!text || !currentRoomId) return;
+
+    const payload = createPayload({ type: 'text', content: text });
+    payload.mentions = [...activeMentions];
+
+    await addDoc(collection(db, "rooms", currentRoomId, "messages"), payload);
+    input.value = '';
+    input.style.height = '38px';
+    activeMentions = [];
+    document.getElementById('mentionMenu').style.display = 'none';
+    cancelReply();
+  };
+
+  let tempSendImageBase64 = "";
+
+  window.openImageCropModal = function(event) {
+    const file = event.target.files[0];
+    if (!file || !currentRoomId) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      tempSendImageBase64 = e.target.result;
+      document.getElementById('cropPreviewImg').src = tempSendImageBase64;
+      document.getElementById('cropConfirmBtn').setAttribute('onclick', 'confirmSendImage()');
+      document.getElementById('imageCropModal').style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  window.updateCropPreview = function() {
+    document.getElementById('cropPreviewImg').style.objectPosition = document.getElementById('cropPositionSelect').value;
+  };
+
+  window.closeImageCropModal = function() { document.getElementById('imageCropModal').style.display = 'none'; };
+
+  window.confirmSendImage = async function() {
+    if (!tempSendImageBase64) return;
+    const pos = document.getElementById('cropPositionSelect').value;
+    try {
+      const link = await uploadImageToImgur(tempSendImageBase64);
+      await addDoc(collection(db, "rooms", currentRoomId, "messages"), createPayload({ type: 'image', content: link, imgPosition: pos }));
+    } catch(e) {
+      console.error(e);
+      alert('画像の送信に失敗しました');
+    }
+    closeImageCropModal();
+    cancelReply();
+  };
+
+  window.handleVideoUpload = function(event) {
+    const file = event.target.files[0];
+    if (!file || !currentRoomId || file.size > 10 * 1024 * 1024) return alert('10MB以下の動画にしてください');
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      await addDoc(collection(db, "rooms", currentRoomId, "messages"), createPayload({ type: 'video', content: e.target.result }));
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+    cancelReply();
+  };
+
+  function createPayload(data) {
+    const now = new Date();
+    const payload = {
+      roomId: currentRoomId,
+      userPass: myPassword,
+      userName: myProfile.name,
+      userAvatar: myProfile.avatar || '',
+      userAvatarPos: myProfile.avatarPos || 'center',
+      type: data.type,
+      content: data.content,
+      imgPosition: data.imgPosition || 'center',
+      isUnsent: false,
+      readBy: [myPassword],
+      reactions: {},
+      time: now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0'),
+      timestamp: serverTimestamp()
+    };
+
+    if (currentReplyToMsg) {
+      payload.replyTo = {
+        msgId: currentReplyToMsg.id,
+        userName: currentReplyToMsg.userName,
+        snippet: currentReplyToMsg.type === 'text' ? currentReplyToMsg.content : `[${currentReplyToMsg.type.toUpperCase()}]`
+      };
+    }
+    return payload;
+  }
+
+  // プロフィール表示・編集モーダル処理
+  let tempAvatarBase64 = "", tempBgBase64 = "";
+
+  window.openMyStatusModal = function() { displayProfileInModal(myPassword, myProfile, true); };
+  window.openUserProfileModal = async function(userPass) {
+    if (userPass === myPassword) return openMyStatusModal();
+    const prof = await fetchUserProfile(userPass) || { name: "User_" + userPass.substring(0, 4) };
+    displayProfileInModal(userPass, prof, false);
+  };
+
+  function displayProfileInModal(userPass, profileData, isEditable) {
+    document.getElementById('modalStatusName').textContent = profileData.name || ("User_" + userPass.substring(0, 4));
+    document.getElementById('modalStatusMsg').textContent = profileData.statusMsg || "ステータスメッセージ未設定";
+
+    const bgEl = document.getElementById('modalStatusBg');
+    if (profileData.bg) {
+      bgEl.style.backgroundImage = `url(${profileData.bg})`;
+      bgEl.style.backgroundPosition = profileData.bgPos || 'center';
+    } else {
+      bgEl.style.backgroundImage = 'none';
+      bgEl.style.backgroundColor = '#cbd5e1';
+    }
+
+    const avatarEl = document.getElementById('modalStatusAvatar');
+    if (profileData.avatar) {
+      avatarEl.style.backgroundImage = `url(${profileData.avatar})`;
+      avatarEl.style.backgroundPosition = profileData.avatarPos || 'center';
+      avatarEl.style.color = 'transparent';
+      avatarEl.textContent = '';
+    } else {
+      avatarEl.style.backgroundImage = 'none';
+      avatarEl.style.color = 'var(--text-main)';
+      avatarEl.textContent = (profileData.name || "U").charAt(0).toUpperCase();
+    }
+
+    const editArea = document.getElementById('myStatusEditArea');
+    if (isEditable) {
+      editArea.style.display = 'flex';
+      document.getElementById('editNameInput').value = profileData.name || '';
+      document.getElementById('editStatusMsgInput').value = profileData.statusMsg || '';
+      document.getElementById('bgPosSelect').value = profileData.bgPos || 'center';
+      document.getElementById('avatarPosSelect').value = profileData.avatarPos || 'center';
+      tempAvatarBase64 = profileData.avatar || "";
+      tempBgBase64 = profileData.bg || "";
+    } else {
+      editArea.style.display = 'none';
+    }
+
+    document.getElementById('statusModal').style.display = 'flex';
+  }
+
+  window.closeStatusModal = function() {
+    document.getElementById('statusModal').style.display = 'none';
+  };
+
+  window.autoSaveMyStatus = async function() {
+    myProfile.name = document.getElementById('editNameInput').value.trim() || ("User_" + myPassword.substring(0, 4));
+    myProfile.statusMsg = document.getElementById('editStatusMsgInput').value.trim();
+    myProfile.bgPos = document.getElementById('bgPosSelect').value;
+    myProfile.avatarPos = document.getElementById('avatarPosSelect').value;
+    if (tempAvatarBase64) myProfile.avatar = tempAvatarBase64;
+    if (tempBgBase64) myProfile.bg = tempBgBase64;
+
+    document.getElementById('modalStatusName').textContent = myProfile.name;
+    document.getElementById('modalStatusMsg').textContent = myProfile.statusMsg || "ステータスメッセージ未設定";
+    await saveMyProfileData();
+  };
+
+  window.handleBgSelect = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        tempBgBase64 = await uploadImageToImgur(evt.target.result);
+        document.getElementById('modalStatusBg').style.backgroundImage = `url(${tempBgBase64})`;
+        await autoSaveMyStatus();
+      } catch(err) {
+        console.error(err);
+        alert('背景画像の変更に失敗しました');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  window.handleAvatarSelect = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        tempAvatarBase64 = await uploadImageToImgur(evt.target.result);
+        const avatarEl = document.getElementById('modalStatusAvatar');
+        avatarEl.style.backgroundImage = `url(${tempAvatarBase64})`;
+        avatarEl.textContent = '';
+        await autoSaveMyStatus();
+      } catch(err) {
+        console.error(err);
+        alert('アイコン画像の変更に失敗しました');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 招待モーダル関連
+  window.openInviteModal = function() {
+    const listEl = document.getElementById('inviteFriendsList');
+    listEl.innerHTML = '';
+    const nonMembers = friends.filter(f => !currentRoomMembers.includes(f.pass));
+
+    if (nonMembers.length === 0) {
+      listEl.innerHTML = '<p style="font-size:11px; color:var(--text-sub);">追加できる友達がいません</p>';
+    } else {
+      nonMembers.forEach(f => {
+        const item = document.createElement('label');
+        item.className = 'friend-checkbox-item';
+        item.innerHTML = `<input type="checkbox" value="${f.pass}"> ${escapeHTML(f.name)}`;
+        listEl.appendChild(item);
+      });
+    }
+    document.getElementById('inviteModal').style.display = 'flex';
+  };
+
+  window.closeInviteModal = function() {
+    document.getElementById('inviteModal').style.display = 'none';
+  };
+
+  window.submitInviteFriends = async function() {
+    const checked = Array.from(document.querySelectorAll('#inviteFriendsList input:checked')).map(cb => cb.value);
+    if (checked.length === 0) return closeInviteModal();
+
+    const gDocRef = doc(db, "groups", currentRoomId);
+    const gSnap = await getDoc(gDocRef);
+    if (gSnap.exists()) {
+      const currentM = gSnap.data().members || [];
+      const updated = Array.from(new Set([...currentM, ...checked]));
+      await updateDoc(gDocRef, { members: updated });
+    }
+    closeInviteModal();
+  };
+</script>
+</body>
+</html>
